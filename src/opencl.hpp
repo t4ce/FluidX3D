@@ -13,6 +13,7 @@
 #define CL_HPP_TARGET_OPENCL_VERSION 120 // macOS only supports OpenCL 1.2
 #endif // macOS
 #include <CL/opencl.hpp>
+#include <cstdlib>
 #include "utilities.hpp"
 using cl::Event;
 
@@ -311,6 +312,11 @@ public:
 		this->cl_queue = cl::CommandQueue(info.cl_context, info.cl_device); // queue to push commands for the device
 		cl::Program::Sources cl_source;
 		const string kernel_code = enable_device_capabilities()+"\n"+opencl_c_code;
+		if(const char* export_path = std::getenv("FLUIDX3D_EXPORT_OPENCL")) {
+			write_file(export_path, kernel_code);
+			print_info("Exported configured OpenCL C code to "+string(export_path)+".");
+			if(std::getenv("FLUIDX3D_EXPORT_OPENCL_ONLY")) std::exit(0);
+		}
 		cl_source.push_back({ kernel_code.c_str(), kernel_code.length() });
 		this->cl_program = cl::Program(info.cl_context, cl_source);
 		const string build_options = "-cl-std=CL"+info.opencl_c_version+" -cl-finite-math-only -cl-no-signed-zeros -cl-mad-enable"+(info.patch_intel_gpu_above_4gb ? " -cl-intel-greater-than-4GB-buffer-required" : "");

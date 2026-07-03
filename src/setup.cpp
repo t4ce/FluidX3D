@@ -250,12 +250,12 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 
 
-/*void main_setup() { // 2D Karman vortex street; required extensions in defines.hpp: D2Q9, FP16S, EQUILIBRIUM_BOUNDARIES, INTERACTIVE_GRAPHICS
+void main_setup() { // 2D Karman vortex street; required extensions in defines.hpp: D2Q9, FP16S, EQUILIBRIUM_BOUNDARIES, INTERACTIVE_GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint R = 16u;
 	const float Re = 250.0f;
 	const float u = 0.10f;
-	LBM lbm(16u*R, 32u*R, 1u, units.nu_from_Re(Re, 2.0f*(float)R, u));
+	LBM lbm(32u*R, 32u*R, 1u, units.nu_from_Re(Re, 2.0f*(float)R, u));
 	// ###################################################################################### define geometry ######################################################################################
 	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(cylinder(x, y, z, float3(Nx/2u, Ny/4u, Nz/2u), float3(0u, 0u, Nz), (float)R)) lbm.flags[n] = TYPE_S;
@@ -264,7 +264,24 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FIELD;
 	lbm.graphics.slice_mode = 3;
-	lbm.run();
+	lbm.graphics.set_camera_centered(0.0f, 90.0f, 5.0f, 0.95f);
+#ifdef INTERACTIVE_GRAPHICS
+	key_P = true;
+	const uint target_fps = 60u;
+	const ulong steps_per_frame = 8ull;
+	while(running) {
+		Clock frame_clock;
+		lbm.run(steps_per_frame);
+		sleep(1.0/(double)target_fps-frame_clock.stop());
+	}
+#else // INTERACTIVE_GRAPHICS
+	const ulong lbm_T = 12000u;
+	lbm.run(0u, lbm_T);
+	while(lbm.get_t()<lbm_T) {
+		if(lbm.graphics.next_frame(lbm_T, 0.5f)) lbm.graphics.write_frame(get_exe_path()+"export/karman-qoi/", "image", ".qoi");
+		lbm.run(100u, lbm_T);
+	}
+#endif // INTERACTIVE_GRAPHICS
 } /**/
 
 
