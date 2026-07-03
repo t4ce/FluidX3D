@@ -250,7 +250,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 
 
-void main_setup() { // 2D Karman vortex street; required extensions in defines.hpp: D2Q9, FP16S, EQUILIBRIUM_BOUNDARIES, INTERACTIVE_GRAPHICS
+/*void main_setup() { // 2D Karman vortex street; required extensions in defines.hpp: D2Q9, FP16S, EQUILIBRIUM_BOUNDARIES, INTERACTIVE_GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint R = 16u;
 	const float Re = 250.0f;
@@ -1037,7 +1037,19 @@ void main_setup() { // 2D Karman vortex street; required extensions in defines.h
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // all non periodic
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
+	lbm.graphics.set_camera_centered(-35.0f, 30.0f, 70.0f, 1.1f);
+#ifdef INTERACTIVE_GRAPHICS
+	key_P = true;
+	const uint target_fps = 60u;
+	const ulong steps_per_frame = 1ull;
+	while(running) {
+		Clock frame_clock;
+		lbm.run(steps_per_frame);
+		sleep(1.0/(double)target_fps-frame_clock.stop());
+	}
+#else // INTERACTIVE_GRAPHICS
 	lbm.run();
+#endif // INTERACTIVE_GRAPHICS
 } /**/
 
 
@@ -1123,7 +1135,7 @@ void main_setup() { // 2D Karman vortex street; required extensions in defines.h
 
 
 
-/*void main_setup() { // river; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
+void main_setup() { // river; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(128u, 384u, 96u, 0.02f, 0.0f, -0.00007f, -0.0005f, 0.01f);
 	// ###################################################################################### define geometry ######################################################################################
