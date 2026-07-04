@@ -964,8 +964,9 @@ void LBM::run(const ulong steps, const ulong total_steps) { // initializes the L
 	Clock clock;
 	for(ulong i=1ull; i<=steps; i++) {
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
-		while(!key_P&&running) sleep(0.016);
+		while(!key_P&&!example_switch_requested&&running) sleep(0.016);
 		if(!running) break;
+		if(example_switch_requested) break;
 #endif // INTERACTIVE_GRAPHICS_ASCII || INTERACTIVE_GRAPHICS
 		clock.start();
 		do_time_step();
@@ -1032,8 +1033,9 @@ void LBM::integrate_particles(const ulong steps, const ulong total_steps, const 
 	Clock clock;
 	for(ulong i=1ull; i<=steps; i+=(ulong)time_step_multiplicator) {
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
-		while(!key_P&&running) sleep(0.016);
+		while(!key_P&&!example_switch_requested&&running) sleep(0.016);
 		if(!running) break;
+		if(example_switch_requested) break;
 #endif // INTERACTIVE_GRAPHICS_ASCII || INTERACTIVE_GRAPHICS
 		clock.start();
 		for(uint d=0u; d<get_D(); d++) lbm_domain[d]->enqueue_integrate_particles(time_step_multiplicator);

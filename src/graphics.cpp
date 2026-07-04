@@ -11,6 +11,7 @@ Camera camera;
 //bool key_N=false, key_O=false, key_P=false, key_Q=false, key_R=false, key_S=false, key_T=false, key_U=false, key_V=false, key_W=false, key_X=false, key_Y=false, key_Z=false;
 bool key_E=false, key_G=false, key_H=false, key_O=false, key_P=false, key_Q=false, key_T=false, key_Z=false;
 bool key_1=false, key_2=false, key_3=false, key_4=false, key_5=false, key_6=false, key_7=false, key_8=false, key_9=false, key_0=false;
+std::atomic_bool example_switch_requested = false;
 
 const uint light_sources_N = 100u; // maximal number of light sources
 float3 light_sources[light_sources_N]; // coordinates of light sources
@@ -431,7 +432,7 @@ void key_bindings(const int key) {
 		case '7': key_7 = !key_7; break;
 		case '8': key_8 = !key_8; break;
 		case '9': key_9 = !key_9; break;
-		case '0': key_0 = !key_0; break;
+		case '0': example_switch_requested = true; key_P = true; break;
 	}
 	camera.input_key(key);
 }

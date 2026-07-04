@@ -1135,23 +1135,148 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 
 
-void main_setup() { // river; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
-	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	LBM lbm(128u, 384u, 96u, 0.02f, 0.0f, -0.00007f, -0.0005f, 0.01f);
-	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
-		const int R = 20, H = 32;
-		if(z==0) lbm.flags[n] = TYPE_S;
-		else if(z<H) {
-			lbm.flags[n] = TYPE_F;
-			lbm.u.y[n] = -0.1f;
-		}
-		if(cylinder(x, y, z, float3(Nx*2u/3u, Ny*2u/3u, Nz/2u)+0.5f, float3(0u, 0u, Nz), (float)R)) lbm.flags[n] = TYPE_S;
-		if(cuboid(x, y, z, float3(Nx/3u, Ny/3u, Nz/2u)+0.5f, float3(2u*R, 2u*R, Nz))) lbm.flags[n] = TYPE_S;
-		if(x==0u||x==Nx-1u) lbm.flags[n] = TYPE_S; // x non periodic
-	}); // ####################################################################### run simulation, export images and data ##########################################################################
-	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
-	lbm.run();
+enum Example_Setup {
+	Example_River,
+	Example_Dam_Break,
+	Example_Cube_Gravity,
+	Example_Periodic_Faucet,
+	Example_Count
+};
+
+const string example_setup_name(const Example_Setup example) {
+	switch(example) {
+		case Example_River: return "river";
+		case Example_Dam_Break: return "dam break";
+		case Example_Cube_Gravity: return "cube with changing gravity";
+		case Example_Periodic_Faucet: return "periodic faucet";
+		default: return "unknown";
+	}
+}
+
+LBM* create_example_setup(const Example_Setup example) {
+	if(example==Example_River) { // river; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
+		// ################################################################## define simulation box size, viscosity and volume force ###################################################################
+		LBM* lbm = new LBM(128u, 384u, 96u, 0.02f, 0.0f, -0.00007f, -0.0005f, 0.01f);
+		// ###################################################################################### define geometry ######################################################################################
+		const uint Nx=lbm->get_Nx(), Ny=lbm->get_Ny(), Nz=lbm->get_Nz(); parallel_for(lbm->get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm->coordinates(n, x, y, z);
+			const int R = 20, H = 32;
+			if(z==0) lbm->flags[n] = TYPE_S;
+			else if(z<H) {
+				lbm->flags[n] = TYPE_F;
+				lbm->u.y[n] = -0.1f;
+			}
+			if(cylinder(x, y, z, float3(Nx*2u/3u, Ny*2u/3u, Nz/2u)+0.5f, float3(0u, 0u, Nz), (float)R)) lbm->flags[n] = TYPE_S;
+			if(cuboid(x, y, z, float3(Nx/3u, Ny/3u, Nz/2u)+0.5f, float3(2u*R, 2u*R, Nz))) lbm->flags[n] = TYPE_S;
+			if(x==0u||x==Nx-1u) lbm->flags[n] = TYPE_S; // x non periodic
+		}); // ####################################################################### run simulation, export images and data ##########################################################################
+		lbm->graphics.visualization_modes = lbm->get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
+		return lbm;
+	} else if(example==Example_Dam_Break) { // dam break; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
+		// ################################################################## define simulation box size, viscosity and volume force ###################################################################
+		LBM* lbm = new LBM(128u, 256u, 256u, 0.005f, 0.0f, 0.0f, -0.0002f, 0.0001f);
+		// ###################################################################################### define geometry ######################################################################################
+		const uint Nx=lbm->get_Nx(), Ny=lbm->get_Ny(), Nz=lbm->get_Nz(); parallel_for(lbm->get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm->coordinates(n, x, y, z);
+			if(z<Nz*6u/8u && y<Ny/8u) lbm->flags[n] = TYPE_F;
+			if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm->flags[n] = TYPE_S; // all non periodic
+		}); // ####################################################################### run simulation, export images and data ##########################################################################
+		lbm->graphics.visualization_modes = lbm->get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
+		lbm->graphics.set_camera_centered(-35.0f, 30.0f, 70.0f, 1.1f);
+		return lbm;
+	} else if(example==Example_Cube_Gravity) { // cube with changing gravity; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
+		// ################################################################## define simulation box size, viscosity and volume force ###################################################################
+		LBM* lbm = new LBM(96u, 96u, 96u, 0.02f, 0.0f, 0.0f, -0.001f, 0.001f);
+		// ###################################################################################### define geometry ######################################################################################
+		const uint Nx=lbm->get_Nx(), Ny=lbm->get_Ny(), Nz=lbm->get_Nz(); parallel_for(lbm->get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm->coordinates(n, x, y, z);
+			if(x<Nx*2u/3u&&y<Ny*2u/3u) lbm->flags[n] = TYPE_F;
+			if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm->flags[n] = TYPE_S;
+		}); // ####################################################################### run simulation, export images and data ##########################################################################
+		lbm->graphics.visualization_modes = lbm->get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
+		return lbm;
+	} else { // periodic faucet mass conservation test; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
+		// ################################################################## define simulation box size, viscosity and volume force ###################################################################
+		LBM* lbm = new LBM(96u, 192u, 128u, 0.02f, 0.0f, 0.0f, -0.00025f);
+		// ###################################################################################### define geometry ######################################################################################
+		const uint Nx=lbm->get_Nx(), Ny=lbm->get_Ny(), Nz=lbm->get_Nz(); parallel_for(lbm->get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm->coordinates(n, x, y, z);
+			if(y>Ny*5u/6u) lbm->flags[n] = TYPE_F;
+			const uint D=max(Nx, Nz), R=D/6;
+			if(x==0u||x==Nx-1u||y==0u||y==Ny-1u) lbm->flags[n] = TYPE_S; // x and y non periodic
+			if((z==0u||z==Nz-1u) && sq(x-Nx/2)+sq(y-Nx/2)>sq(R)) lbm->flags[n] = TYPE_S; // z non periodic
+			if(y<=Nx/2u+2u*R && torus_x(x, y, z, float3(Nx/2u, Nx/2u+R, Nz)+0.5f, (float)R, (float)R)) lbm->flags[n] = TYPE_S;
+		}); // ####################################################################### run simulation, export images and data ##########################################################################
+		lbm->graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_PHI_RASTERIZE;
+		return lbm;
+	}
+}
+
+void update_example_setup(LBM& lbm, const Example_Setup example) {
+	if(example==Example_Cube_Gravity) {
+		const ulong cycle = lbm.get_t()%13000ull;
+		if(cycle<2500ull) lbm.set_f(0.0f, 0.0f, -0.001f);
+		else if(cycle<5000ull) lbm.set_f(0.0f, +0.001f, 0.0f);
+		else if(cycle<7500ull) lbm.set_f(0.0f, 0.0f, +0.001f);
+		else if(cycle<9500ull) lbm.set_f(0.0f, -0.001f, 0.0f);
+		else lbm.set_f(0.0f, 0.0f, 0.0f);
+	}
+}
+
+void destroy_example_setup(LBM* lbm) {
+#ifdef GRAPHICS
+	camera.allow_rendering = false;
+	camera.rendring_frame.lock(); // prevent the render thread from reading this LBM while it is being released
+	delete lbm;
+	camera.rendring_frame.unlock();
+#else // GRAPHICS
+	delete lbm;
+#endif // GRAPHICS
+}
+
+uint selected_example_setup_index() {
+	const char* const value = std::getenv("FLUIDX3D_EXAMPLE_INDEX");
+	return value==nullptr ? 0u : (uint)std::atoi(value)%Example_Count;
+}
+
+const string shell_quote(const string& value) {
+	return "'"+replace(value, "'", "'\\''")+"'";
+}
+
+void restart_with_example_setup(const uint example_index) {
+#ifdef GRAPHICS
+	camera.allow_rendering = false;
+#endif // GRAPHICS
+	const uint next = example_index%Example_Count;
+	string command = "FLUIDX3D_EXAMPLE_INDEX="+to_string(next)+" "+shell_quote(get_exe_path()+"FluidX3D");
+	for(const string& argument : main_arguments) command += " "+shell_quote(argument);
+	command += " &";
+	print_info("Restarting FluidX3D with example "+to_string(next+1u)+"/"+to_string((uint)Example_Count)+"...");
+	const int result = std::system(command.c_str());
+	(void)result;
+	running = false;
+	exit(0);
+}
+
+void main_setup() { // interactive example browser; press 0 to switch examples; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
+	uint example_index = selected_example_setup_index();
+#ifdef INTERACTIVE_GRAPHICS
+	key_P = true;
+	const uint target_fps = 60u;
+	const ulong steps_per_frame = 1ull;
+	const Example_Setup example = (Example_Setup)(example_index%Example_Count);
+	print_info("Example "+to_string(example_index%Example_Count+1u)+"/"+to_string((uint)Example_Count)+": "+example_setup_name(example)+" (press 0 for next)");
+	example_switch_requested = false;
+	LBM* lbm = create_example_setup(example);
+	while(running&&!example_switch_requested) {
+		Clock frame_clock;
+		update_example_setup(*lbm, example);
+		lbm->run(steps_per_frame);
+		sleep(1.0/(double)target_fps-frame_clock.stop());
+	}
+	if(example_switch_requested) restart_with_example_setup(example_index+1u);
+	destroy_example_setup(lbm);
+#else // INTERACTIVE_GRAPHICS
+	LBM* lbm = create_example_setup((Example_Setup)(example_index%Example_Count));
+	lbm->run();
+	destroy_example_setup(lbm);
+#endif // INTERACTIVE_GRAPHICS
 } /**/
 
 

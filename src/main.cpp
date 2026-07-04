@@ -111,6 +111,7 @@ void main_label(const double frametime) {
 
 			draw_label(ox, oy+i, "Keyboard/Mouse Controls: ", c); i+=2*FONT_HEIGHT;
 			draw_label(ox, oy+i, "P ("+string(key_P?"running ":" paused ")+"): start/pause simulation", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "0: switch to next example setup", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "H ("+string(key_H?" shown  ":" hidden ")+"): show/hide help", c); i+=2*FONT_HEIGHT;
 			draw_label(ox, oy+i, "1 ("+mode_1+"): flag wireframe / solid surface (and force vectors on solid cells or surface pressure if the extension is used)", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "2 ("+mode_2+"): velocity field", c); i+=FONT_HEIGHT;
